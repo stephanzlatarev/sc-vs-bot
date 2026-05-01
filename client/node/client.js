@@ -1,8 +1,8 @@
 import dgram from "dgram";
 import net from "net";
 
-//const TCP_HOST = "host.docker.internal";
-const TCP_HOST = "129.212.171.186";
+const TCP_HOST = "host.docker.internal";
+//const TCP_HOST = "129.212.171.186";
 const TCP_PORT = 10055;
 
 const UDP_HOST = "127.0.0.1";
