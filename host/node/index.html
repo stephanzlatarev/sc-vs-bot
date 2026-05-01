@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Match vs VeTerran-revived</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .status-container {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .status-column {
+      display: flex;
+      flex-direction: column;
+    }
+    .column-title {
+      font-weight: bold;
+      font-size: 16px;
+      color: #333;
+      text-align: center;
+      padding: 10px;
+      border-bottom: 2px solid #007bff;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      font-size: 18px;
+    }
+    .status-item:last-child {
+      border-bottom: none;
+    }
+    .status-label {
+      font-weight: bold;
+      color: #555;
+    }
+    .status-icon {
+      font-size: 24px;
+    }
+    .running {
+      color: #28a745;
+    }
+    .stopped {
+      color: #dc3545;
+    }
+    .button-container {
+      text-align: center;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    button:disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .error-bar {
+      background-color: #dc3545;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: none;
+      text-align: center;
+      font-weight: 500;
+    }
+    .error-bar.show {
+      display: block;
+    }
+    .progress-container {
+      background-color: #e0e0e0;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .progress-container.show {
+      display: block;
+    }
+    .progress-bar {
+      height: 30px;
+      background: linear-gradient(90deg, #007bff, #0056b3, #007bff);
+      background-size: 200% 100%;
+      animation: progress 1.5s ease-in-out infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    @keyframes progress {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <p>
+      Play a match of StarCraft II against <a href="https://aiarena.net/bots/517/" target="_blank">VeTerran-revived</a> on <a href="./maps/LeyLinesAIE_v3.SC2Map">LeyLinesAIE_v3.SC2Map</a>!
+    </p>
+  </div>
+
+  <div id="error-bar" class="error-bar"></div>
+  <div id="progress-container" class="progress-container">
+    <div class="progress-bar">Progressing...</div>
+  </div>
+  <div class="status-container">
+    <div class="status-column">
+      <div class="column-title">HOME</div>
+      <div class="status-item">
+        <span class="status-label">StarCraft II</span>
+        <span id="game-status" class="status-icon">-</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">VeTerran-revived</span>
+        <span id="bot-status" class="status-icon">-</span>
+      </div>
+    </div>
+    <div class="status-column">
+      <div class="column-title">GUEST</div>
+      <div class="status-item">
+        <span class="status-label">StarCraft II</span>
+        <span id="client-status" class="status-icon">-</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">Bot</span>
+        <span id="opponent-status" class="status-icon">-</span>
+      </div>
+    </div>
+  </div>
+  <div class="button-container">
+    <button id="start-button" disabled>Start</button>
+  </div>
+
+  <div>
+    <p>
+      Click on "Start" to start the match.
+      If the button is disabled, you'll need to wait.
+      If there's a green checkmark on the GUEST side, then somebody is already playing.
+      If it's you, make sure to restart your client before a new match.
+    </p>
+    <p>
+      After you click on "Start", you should see 2 green checkmarks on the HOME side.
+      You may need to wait for 10-20 seconds if the game engine is booting.
+      If it doesn't get to green checkmarks, you're out of luck. Come back tomorrow! 
+    </p>
+    <p>
+      Once HOME side is all green, you can start the client on your machine. Run:
+    </p>
+    <pre><b>
+      docker run --name match -p 10001:10001 stephanzlatarev/sc-vs-bot-client
+    </b></pre>
+    <p>
+      StarCraft II on GUEST side should turn green.
+      If it doesn't, check for errors in the console of the client.
+      If it turns green and shortly after turns back to red, check if you're behind a firewall.
+    </p>
+    <p>
+      You're now ready to run your bot. Run:
+    </p>
+    <pre><b>
+      &lt;your-bot&gt; --LadderServer 127.0.0.1 --GamePort 10001 --StartPort 10001
+      --OpponentId eaf8a4ce-8bde-42d6-82b3-2861c8a47930
+    </b></pre>
+    <p>
+      LadderServer and GamePort must match the address of the docker container.
+    </p>
+    <p>
+      StartPort should be 10001 if you use the standard port allocations for JoinGameRequest.
+      The request must have the ports in bold exactly as shown below:
+    </p>
+    <pre>
+      serverPorts:
+        gamePort: 10003
+        <b>basePort: 10004</b>
+      clientPorts:
+        - <b>gamePort: 10005</b>
+          basePort: 10006
+    </pre>
+    <p>
+      The other ports in JoinGameRequest will be ignored anyway.
+    </p>
+    <p>
+      It may take 10-20 seconds for your bot to join the game.
+      After the match completes, stop the client (it's proof-of-concept quality, sorry) with:
+    </p>
+    <pre><b>
+      docker rm -f match
+    </b></pre>
+    <p>
+      Good luck and have fun!
+    </p>
+  </div>
+
+<script>
+    function showError(message) {
+      const errorBar = document.getElementById("error-bar");
+      errorBar.textContent = message;
+      errorBar.classList.add("show");
+    }
+
+    function clearError() {
+      const errorBar = document.getElementById("error-bar");
+      errorBar.classList.remove("show");
+    }
+
+    function updateElement(id, status) {
+      const element = document.getElementById(id);
+
+      if (status) {
+        element.textContent = "✓";
+        element.className = "status-icon running";
+      } else {
+        element.textContent = "✗";
+        element.className = "status-icon stopped";
+      }
+    }
+
+    function showProgressBar(show) {
+      const progressBar = document.getElementById("progress-container");
+
+      if (show) {
+        progressBar.classList.add("show");
+      } else {
+        progressBar.classList.remove("show");
+      }
+    }
+
+    async function updateStatus() {
+      try {
+        const response = await fetch("/status");
+        const status = await response.json();
+
+        updateElement("game-status", status.game.running);
+        updateElement("bot-status", status.bot.running);
+        updateElement("client-status", status.client.connected);
+        updateElement("opponent-status", status.client.playing);
+        showProgressBar(status.progressing);
+
+        document.getElementById("start-button").disabled = status.progressing || status.client.connected;
+        
+        clearError();
+      } catch (error) {
+        showError("Failed to fetch status: " + error.message);
+      }
+    }
+    
+    async function startGame() {
+      document.getElementById("start-button").disabled = true;
+      showProgressBar(true);
+
+      try {
+        const response = await fetch("/start", { method: "POST" });
+        const result = await response.json();
+
+        if (result.error) {
+          showError("Failed to start game");
+        } else {
+          clearError();
+          updateStatus();
+        }
+      } catch (error) {
+        showError("Failed to start game: " + error.message);
+      }
+    }
+    
+    document.getElementById("start-button").addEventListener("click", startGame);
+    
+    // Update status immediately and then every 3 seconds
+    updateStatus();
+    setInterval(updateStatus, 3000);
+  </script>
+</body>
+</html>
