@@ -22,14 +22,15 @@ function trace(error, ...details) {
 function connect(socket) {
   console.log("Client", socket ? "connected" : "disconnected");
 
-  status.connected = !!socket;
   status.playing = false;
-  status.ping = 0;
   status.join = Infinity;
 
   client = socket;
 
   if (socket) {
+    status.connected = true;
+    status.ping = Date.now();
+
     socket.setKeepAlive(true, 1000);
     socket.setNoDelay(true);
     socket.on("data", (data) => {
@@ -46,6 +47,9 @@ function connect(socket) {
 
     socket.on("error", trace);
     socket.on("close", connect);
+  } else {
+    status.connected = false;
+    status.ping = 0;
   }
 }
 
