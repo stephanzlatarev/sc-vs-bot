@@ -36,7 +36,7 @@ class Game {
 
     while (Date.now() < deadline) {
       try {
-        console.log("Checking StarCraft II...", new Date());
+        console.log("Checking StarCraft II...");
         await client.connect({ host: "127.0.0.1", port: 10001 });
         break;
       } catch (_) {
@@ -44,7 +44,7 @@ class Game {
       }
     }  
 
-    console.log("Creating game...", new Date());
+    console.log("Creating game...");
     await client.createGame({
       localMap: { mapPath: "/StarCraftII/Maps/LeyLinesAIE_v3.SC2Map" },
       playerSetup: [{ type: 1 }, { type: 1 }],

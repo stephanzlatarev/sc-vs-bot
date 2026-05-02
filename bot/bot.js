@@ -13,15 +13,6 @@ class Bot {
     await this.client.connect({ host: "localhost", port: this.port });
   }
 
-  async create() {
-    console.log(this.port, "Creating game...");
-    await this.client.createGame({
-      localMap: { mapPath: "/StarCraftII/Maps/LeyLinesAIE_v3.SC2Map" },
-      playerSetup: [{ type: 1 }, { type: 1 }],
-      realtime: false,
-    });
-  }
-
   async join() {
     console.log(this.port, "Joining game...");
     await this.client.joinGame({
