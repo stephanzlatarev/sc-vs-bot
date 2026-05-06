@@ -44,13 +44,6 @@ class Game {
       }
     }  
 
-    console.log("Creating game...");
-    await client.createGame({
-      localMap: { mapPath: "/StarCraftII/Maps/LeyLinesAIE_v3.SC2Map" },
-      playerSetup: [{ type: 1 }, { type: 1 }],
-      realtime: false,
-    });
-
     await client.close();
 
     this.status.running = true;

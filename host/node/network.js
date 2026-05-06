@@ -1,99 +1,161 @@
 import dgram from "dgram";
 import net from "net";
 
-const UDP_PORT = 10005;
-const TCP_PORT = 10055;
+const LOCAL_TCP_PORT = 10004;
+const PUBLIC_TCP_PORT = 10044;
+const LOCAL_UDP_HOST = "127.0.0.1";
+const LOCAL_UDP_PORT = 10005;
+const PUBLIC_UDP_PORT = 10055;
 
 const status = {
-  connected: false, // Client is connected and pings are flowing
-  playing: false,   // Status is connected and no joins are sent
-  ping: 0,
-  join: Infinity,
+  connected: false,
+  playing: false,
 };
 
-let host;
-let client;
+let gameTunnel;
+let udpTunnel;
+let pendingLocalGame;
 
 function trace(error, ...details) {
   if (error) console.log("ERROR:", error);
   if (!error && details && details.length) console.log(...details);
 }
 
-function connect(socket) {
-  console.log("Client", socket ? "connected" : "disconnected");
+function pairSockets(left, right, label) {
+  console.log(`${label} paired`);
 
-  status.playing = false;
-  status.join = Infinity;
+  left.on("error", trace);
+  right.on("error", trace);
 
-  client = socket;
+  left.on("close", () => right.destroy());
+  right.on("close", () => left.destroy());
 
-  if (socket) {
-    status.connected = true;
-    status.ping = Date.now();
+  left.pipe(right);
+  right.pipe(left);
+}
 
-    socket.setKeepAlive(true, 1000);
-    socket.setNoDelay(true);
-    socket.on("data", (data) => {
-      if (!host) return;
+function pairGameTunnel() {
+  if (!gameTunnel || !pendingLocalGame) return;
 
-      if (data.length > 1) {
-        console.log(`(${data.length}) <<<`, data);
-        udp.send(data, host.port, host.address, trace);
-      } else {
-        // This is a ping to detect firewalls
-        status.ping = Date.now();
-      }
-    });
+  const tunnel = gameTunnel;
+  const local = pendingLocalGame;
 
-    socket.on("error", trace);
-    socket.on("close", connect);
-  } else {
-    status.connected = false;
-    status.ping = 0;
-  }
+  gameTunnel = null;
+  pendingLocalGame = null;
+
+  pairSockets(local, tunnel, "TCP game tunnel");
 }
 
 const udp = dgram.createSocket("udp4");
-const tcp = net.createServer(connect);
+const localTcp = net.createServer((socket) => {
+  console.log("Local game client connected");
 
-udp.on("message", (message, source) => {
-  host = source;
+  if (pendingLocalGame) pendingLocalGame.destroy();
 
-  if (client) {
-    console.log(`(${message.length}) >>>`, message);
-    client.write(Buffer.from(message));
-    status.join = Date.now();
+  pendingLocalGame = socket;
+  socket.setKeepAlive(true, 1000);
+  socket.setNoDelay(true);
+  socket.on("error", trace);
+  socket.on("close", () => {
+    if (pendingLocalGame === socket) pendingLocalGame = null;
+  });
+
+  if (!gameTunnel) {
+    console.log("TCP game tunnel unavailable");
+    socket.destroy();
+    return;
   }
+
+  pairGameTunnel();
+});
+
+const publicTcp = net.createServer((socket) => {
+  console.log("Human TCP tunnel connected");
+
+  if (gameTunnel) gameTunnel.destroy();
+
+  gameTunnel = socket;
+  socket.setKeepAlive(true, 1000);
+  socket.setNoDelay(true);
+  socket.on("error", trace);
+  socket.on("close", () => {
+    console.log("Human TCP tunnel disconnected");
+    if (gameTunnel === socket) gameTunnel = null;
+    if (pendingLocalGame) {
+      pendingLocalGame.destroy();
+      pendingLocalGame = null;
+    }
+  });
+
+  pairGameTunnel();
+});
+
+const publicUdp = net.createServer((socket) => {
+  console.log("Human UDP tunnel connected");
+
+  if (udpTunnel) udpTunnel.destroy();
+
+  udpTunnel = socket;
+  status.connected = true;
+  status.playing = false;
+
+  socket.setKeepAlive(true, 1000);
+  socket.setNoDelay(true);
+  socket.on("data", (data) => {
+    if (data.length <= 1) return;
+
+    console.log(`(${data.length}) TCP>>UDP`, data);
+    udp.send(data, LOCAL_UDP_PORT, LOCAL_UDP_HOST, trace);
+  });
+
+  socket.on("error", trace);
+  socket.on("close", () => {
+    console.log("Human UDP tunnel disconnected");
+    if (udpTunnel === socket) udpTunnel = null;
+    status.connected = false;
+    status.playing = false;
+  });
+});
+
+udp.on("message", (message) => {
+  if (!udpTunnel) return;
+
+  console.log(`(${message.length}) UDP>>TCP`, message);
+  udpTunnel.write(Buffer.from(message));
+  status.playing = true;
 });
 
 udp.on("listening", () => {
   const address = udp.address();
-  console.log(`Listening on: ${address.address}:${address.port}`);
+  console.log(`Listening on: ${address.address}:${address.port} UDP responses`);
 });
-tcp.on("listening", () => {
-  const address = tcp.address();
-  console.log(`Listening on: ${address.address}:${address.port}`);
+localTcp.on("listening", () => {
+  const address = localTcp.address();
+  console.log(`Listening on: ${address.address}:${address.port} local game TCP`);
+});
+publicTcp.on("listening", () => {
+  const address = publicTcp.address();
+  console.log(`Listening on: ${address.address}:${address.port} public TCP tunnel`);
+});
+publicUdp.on("listening", () => {
+  const address = publicUdp.address();
+  console.log(`Listening on: ${address.address}:${address.port} public UDP tunnel`);
 });
 
 udp.on("error", trace);
-tcp.on("error", trace);
+localTcp.on("error", trace);
+publicTcp.on("error", trace);
+publicUdp.on("error", trace);
 
-udp.bind(UDP_PORT);
-tcp.listen(TCP_PORT);
+udp.bind();
+localTcp.listen(LOCAL_TCP_PORT, "127.0.0.1");
+publicTcp.listen(PUBLIC_TCP_PORT);
+publicUdp.listen(PUBLIC_UDP_PORT);
 
 setInterval(() => {
-  if (client && (status.ping >= Date.now() - 3000)) {
-    status.connected = true;
-    status.playing = (status.join < Date.now() - 3000);
-  } else {
-    status.connected = false;
-    status.playing = false;
+  if (!udpTunnel) return;
 
-    if (client) {
-      client.destroy();
-      client = null;
-    }
-  }
-}, 3000);
+  udpTunnel.write(Buffer.from([0]));
+}, 500);
 
 export default status;

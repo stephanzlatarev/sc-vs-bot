@@ -12,6 +12,7 @@ async function play() {
     await game.start(5001);
     await proxy.connect(5001);
 
+    await proxy.create();
     await proxy.join(3, "Human");
 
     let time = Date.now() + 1000;
