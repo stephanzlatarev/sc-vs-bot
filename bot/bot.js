@@ -79,7 +79,7 @@ async function play() {
 
     await bot.connect();
 
-    bot.join();
+    await bot.join();
 
     let time = Date.now() + 1000;
     while (true) {
