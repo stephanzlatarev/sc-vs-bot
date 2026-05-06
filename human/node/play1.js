@@ -1,5 +1,4 @@
 import Game from "./game.js";
-import Network from "./network.js";
 import Proxy from "./proxy.js";
 
 async function play() {
@@ -7,12 +6,10 @@ async function play() {
   const proxy = new Proxy();
 
   try {
-    Network();
-
     await game.start(5001);
     await proxy.connect(5001);
 
-    await proxy.join(3, "Human");
+    await proxy.join(2, "Player 1");
 
     let time = Date.now() + 1000;
 
