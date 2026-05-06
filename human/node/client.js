@@ -3,11 +3,11 @@ import { PATH, PORT } from "./config.js";
 
 const MILLIS_PER_LOOP = 1000 / 22.4;
 
-export default class Proxy {
+export default class Client {
 
   client = starcraft();
 
-  loops = 0;
+  loop = 0;
   time = 0;
 
   async connect() {
@@ -29,7 +29,7 @@ export default class Proxy {
     console.log("Unable to connect to StarCraft II");
   }
 
-  async create() {
+  async createGame() {
     console.log("Creating game");
     const response = await this.client.createGame({
       localMap: { mapPath: PATH + "\\Maps\\LeyLinesAIE_v3.SC2Map" },
@@ -39,7 +39,7 @@ export default class Proxy {
     console.log("Game created:", response);
   }
 
-  async join(race, name) {
+  async joinGame(race, name) {
     console.log("Joining game...");
     const joined = await this.client.joinGame({
       playerName: name || "Human",
@@ -54,10 +54,12 @@ export default class Proxy {
   async step() {
     await this.client.step({ count: 1 });
 
-    loops++;
+    if (!this.time) this.time = Date.now();
+
+    this.loop++;
 
     const elapsed = (Date.now() - this.time);
-    const expected = loops * MILLIS_PER_LOOP;
+    const expected = this.loop * MILLIS_PER_LOOP;
 
     if (elapsed < expected) {
       await new Promise(r => setTimeout(r, expected - elapsed));

@@ -1,22 +1,22 @@
+import Client from "./client.js";
 import Game from "./game.js";
 import Network from "./network.js";
-import Proxy from "./proxy.js";
 
 async function play() {
   const game = new Game();
-  const proxy = new Proxy();
+  const client = new Client();
 
   try {
     Network();
 
     await game.start();
-    await proxy.connect();
+    await client.connect();
 
-    await proxy.create();
-    await proxy.join(3, "Human");
+    await client.createGame();
+    await client.joinGame(3, "Human");
 
     while (true) {
-      await proxy.step();
+      await client.step();
     }
   } catch (error) {
     console.log(error);
