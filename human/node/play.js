@@ -9,21 +9,13 @@ async function play() {
   try {
     Network();
 
-    await game.start(5001);
-    await proxy.connect(5001);
+    await game.start();
+    await proxy.connect();
 
     await proxy.create();
     await proxy.join(3, "Human");
 
-    let time = Date.now() + 1000;
-
     while (true) {
-      if (Date.now() > time) {
-        await proxy.trace();
-
-        time = Date.now() + 1000;
-      }
-
       await proxy.step();
     }
   } catch (error) {
