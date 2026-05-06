@@ -1,0 +1,12 @@
+[package]
+name = "rust"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1"
+futures-util = "0.3"
+protobuf = { version = "=3.2.0" }
+sc2-proto = { git = "https://github.com/aiarena/sc2-proto-rs.git" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "process", "io-util", "sync"] }
+tokio-tungstenite = "0.24"
