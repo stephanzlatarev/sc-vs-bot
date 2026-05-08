@@ -1,50 +1,41 @@
-import dgram from "dgram";
-import net from "net";
+import starcraft from "@node-sc2/proto";
 
-const TCP_HOST = "host.docker.internal";
-//const TCP_HOST = "129.212.171.186";
-const TCP_PORT = 10055;
+export default class Client {
 
-const UDP_HOST = "127.0.0.1";
-const UDP_PORT = 10005;
+  client = starcraft();
 
-const tcp = net.createConnection({ host: TCP_HOST, port: TCP_PORT }, () => {
-  console.log("Host connected");
-});
-const udp = dgram.createSocket("udp4");
+  async connect() {
+    const deadline = Date.now() + 60000;
 
-tcp.setKeepAlive(true);
-tcp.setNoDelay(true);
-tcp.on("data", (data) => {
-  const buffer = Buffer.from(data);
-  console.log(`(${buffer.length}) TCP>>UDP`, buffer);
-  udp.send(buffer, UDP_PORT, UDP_HOST, trace);
-});
+    while (Date.now() < deadline) {
+      try {
+        console.log("Connecting to StarCraft II...");
+        await this.client.connect({ host: "127.0.0.1", port: 10001 });
 
-udp.on("message", (message) => {
-  const buffer = Buffer.from(message);
-  console.log(`(${buffer.length}) TCP<<UDP`, buffer);
-  tcp.write(buffer);
-});
+        console.log("Connected");
+        return;
+      } catch (e) {
+        console.log("Error on attempt to connect to StarCraft II:", e.message || e);
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
 
-udp.on("listening", () => {
-  const address = udp.address();
-  console.log(`Listening on: ${address.address}:${address.port} UDP responses`);
-});
+    console.log("Unable to connect to StarCraft II");
+  }
 
-udp.on("error", trace);
+  async createGame() {
+    console.log("Creating game");
+    const response = await this.client.createGame({
+      localMap: { mapPath: "/StarCraftII/Maps/LeyLinesAIE_v3.SC2Map" },
+      playerSetup: [{ type: 1 }, { type: 1 }],
+      realtime: false,
+    });
+    console.log("Game created:", response);
+  }
 
-tcp.on("error", trace);
-tcp.on("close", () => {
-  console.log("Host disconnected");
-});
+  async disconnect() {
+    console.log("Disconnecting...");
+    await this.client.close();
+  }
 
-udp.bind();
-
-// Send pings to detect firewalls
-setInterval(() => { tcp.write(Buffer.from([0])); }, 500);
-
-function trace(error, ...details) {
-  if (error) console.log("ERROR:", error);
-  if (!error && details && details.length) console.log(...details);
 }

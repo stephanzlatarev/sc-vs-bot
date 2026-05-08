@@ -5,13 +5,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - && apt-get instal
 
 COPY bots/ /bots/
 COPY maps/ /StarCraftII/Maps/
-
-COPY host.sh /host.sh
-RUN chmod +x /host.sh
+COPY exe/ /exe/
 
 WORKDIR /node
 
 COPY node/ ./
 RUN npm install
 
-ENTRYPOINT ["/host.sh"]
+ENTRYPOINT ["node", "host.js"]

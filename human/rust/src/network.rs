@@ -7,49 +7,56 @@ use tokio::net::{TcpStream, UdpSocket};
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
-const REMOTE_HOST: &str = "host.docker.internal";
-const LOCAL_TCP_HOST: &str = "127.0.0.1";
-const LOCAL_TCP_PORT: u16 = 10004;
-const REMOTE_TCP_PORT: u16 = 10044;
-const REMOTE_UDP_PORT: u16 = 10055;
-const UDP_PORT: u16 = 10005;
+use crate::config::Config;
 
-pub fn start() {
+pub fn start(config: Arc<Config>) {
     println!("Networking created");
 
+    let tcp_config = Arc::clone(&config);
     tokio::spawn(async {
-        if let Err(err) = run_tcp_tunnel().await {
+        if let Err(err) = run_tcp_tunnel(tcp_config).await {
             eprintln!("ERROR: {err:?}");
         }
     });
 
     tokio::spawn(async {
-        if let Err(err) = run_udp_bridge().await {
+        if let Err(err) = run_udp_bridge(config).await {
             eprintln!("ERROR: {err:?}");
         }
     });
 }
 
-async fn run_tcp_tunnel() -> Result<()> {
-    let mut remote = TcpStream::connect((REMOTE_HOST, REMOTE_TCP_PORT))
+async fn run_tcp_tunnel(config: Arc<Config>) -> Result<()> {
+    let mut remote = TcpStream::connect((config.remote_host.as_str(), config.remote_server_port))
         .await
-        .with_context(|| format!("connect TCP tunnel {}:{}", REMOTE_HOST, REMOTE_TCP_PORT))?;
+        .with_context(|| {
+            format!(
+                "connect TCP tunnel {}:{}",
+                config.remote_host, config.remote_server_port
+            )
+        })?;
     remote.set_nodelay(true)?;
-    println!("TCP tunnel connected ({}:{})", REMOTE_HOST, REMOTE_TCP_PORT);
+    println!(
+        "TCP tunnel connected ({}:{})",
+        config.remote_host, config.remote_server_port
+    );
 
-    let mut local = connect_local_game().await?;
+    let mut local = connect_local_game(&config).await?;
     copy_bidirectional(&mut local, &mut remote).await?;
 
     println!("TCP tunnel disconnected");
     Ok(())
 }
 
-async fn connect_local_game() -> Result<TcpStream> {
+async fn connect_local_game(config: &Config) -> Result<TcpStream> {
     loop {
-        match TcpStream::connect((LOCAL_TCP_HOST, LOCAL_TCP_PORT)).await {
+        match TcpStream::connect((config.local_host.as_str(), config.local_server_port)).await {
             Ok(stream) => {
                 stream.set_nodelay(true)?;
-                println!("Local game connected ({}:{})", LOCAL_TCP_HOST, LOCAL_TCP_PORT);
+                println!(
+                    "Local game connected ({}:{})",
+                    config.local_host, config.local_server_port
+                );
                 return Ok(stream);
             }
             Err(err) if err.kind() == ErrorKind::ConnectionRefused || err.kind() == ErrorKind::ConnectionReset => {
@@ -57,21 +64,29 @@ async fn connect_local_game() -> Result<TcpStream> {
             }
             Err(err) => {
                 return Err(err).with_context(|| {
-                    format!("connect local game {}:{}", LOCAL_TCP_HOST, LOCAL_TCP_PORT)
+                    format!(
+                        "connect local game {}:{}",
+                        config.local_host, config.local_server_port
+                    )
                 });
             }
         }
     }
 }
 
-async fn run_udp_bridge() -> Result<()> {
-    let tcp = TcpStream::connect((REMOTE_HOST, REMOTE_UDP_PORT))
+async fn run_udp_bridge(config: Arc<Config>) -> Result<()> {
+    let tcp = TcpStream::connect((config.remote_host.as_str(), config.remote_client_port))
         .await
-        .with_context(|| format!("connect UDP tunnel {}:{}", REMOTE_HOST, REMOTE_UDP_PORT))?;
+        .with_context(|| {
+            format!(
+                "connect UDP tunnel {}:{}",
+                config.remote_host, config.remote_client_port
+            )
+        })?;
     tcp.set_nodelay(true)?;
     println!("UDP tunnel connected");
 
-    let udp = Arc::new(UdpSocket::bind(("0.0.0.0", UDP_PORT)).await?);
+    let udp = Arc::new(UdpSocket::bind(("0.0.0.0", config.local_client_port)).await?);
     let local = udp.local_addr()?;
     println!("Listening on: {}:{} UDP bridge", local.ip(), local.port());
 

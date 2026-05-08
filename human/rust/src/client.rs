@@ -6,26 +6,29 @@ use sc2_proto::sc2api::{
     InterfaceOptions, LocalMap, PlayerSetup, PlayerType, PortSet, Request, RequestCreateGame,
     RequestJoinGame, RequestStep, Response,
 };
+use std::sync::Arc;
 use tokio::net::TcpStream;
 use tokio::time::{sleep, Duration, Instant};
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{connect_async, MaybeTlsStream, WebSocketStream};
 
-use crate::config::{PATH, PORT};
+use crate::config::Config;
 
 const MILLIS_PER_LOOP: f64 = 1000.0 / 22.4;
 
 type Ws = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
 pub struct Client {
+    config: Arc<Config>,
     ws: Option<Ws>,
     loop_count: u64,
     time: Option<Instant>,
 }
 
 impl Client {
-    pub fn new() -> Self {
+    pub fn new(config: Arc<Config>) -> Self {
         Self {
+            config,
             ws: None,
             loop_count: 0,
             time: None,
@@ -34,7 +37,10 @@ impl Client {
 
     pub async fn connect(&mut self) -> Result<()> {
         let deadline = Instant::now() + Duration::from_secs(60);
-        let url = format!("ws://127.0.0.1:{}/sc2api", PORT);
+        let url = format!(
+            "ws://{}:{}/sc2api",
+            self.config.local_host, self.config.sc2_port
+        );
 
         while Instant::now() < deadline {
             println!("Connecting to StarCraft II...");
@@ -59,7 +65,14 @@ impl Client {
         println!("Creating game");
 
         let mut local_map = LocalMap::new();
-        local_map.set_map_path(format!(r"{}\Maps\LeyLinesAIE_v3.SC2Map", PATH));
+        local_map.set_map_path(
+            self.config
+                .sc2_path
+                .join("Maps")
+                .join(format!("{}.SC2Map", &self.config.map_name))
+                .to_string_lossy()
+                .to_string(),
+        );
 
         let mut p1 = PlayerSetup::new();
         p1.set_type(PlayerType::Participant);
@@ -87,12 +100,12 @@ impl Client {
         options.set_score(true);
 
         let mut server_ports = PortSet::new();
-        server_ports.set_game_port(10004);
-        server_ports.set_base_port(10004);
+        server_ports.set_game_port(i32::from(self.config.local_server_port));
+        server_ports.set_base_port(i32::from(self.config.local_server_port));
 
         let mut client_ports = PortSet::new();
-        client_ports.set_game_port(10005);
-        client_ports.set_base_port(10005);
+        client_ports.set_game_port(i32::from(self.config.local_client_port));
+        client_ports.set_base_port(i32::from(self.config.local_client_port));
 
         let mut join = RequestJoinGame::new();
         join.set_player_name(name.to_string());

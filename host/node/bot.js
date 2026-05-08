@@ -4,11 +4,15 @@ import game from "./game.js";
 class Bot {
 
   status = {
+    progressing: false,
     running: false,
   };
 
   start() {
-    this.stop();
+    if (this.status.running) return;
+    if (this.status.progressing) return;
+
+    this.status.progressing = true;
 
     console.log("Starting VeTerran-revived...");
 
@@ -26,11 +30,13 @@ class Bot {
     this.process.on("exit", this.exit.bind(this));
 
     this.status.running = true;
+    this.status.progressing = false;
   }
 
   exit(details) {
     console.error("VeTerran-revived stopped", details || "");
     this.process = null;
+    this.status.progressing = false;
     this.status.running = false;
 
     game.stop();
@@ -38,6 +44,8 @@ class Bot {
 
   stop() {
     if (this.process) this.process.kill();
+
+    this.status.progressing = false;
     this.status.running = false;
   }
 

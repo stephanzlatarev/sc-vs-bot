@@ -85,6 +85,31 @@
       cursor: not-allowed;
       opacity: 0.6;
     }
+    .link-button {
+      display: inline-block;
+      background-color: #007bff;
+      color: white;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      text-decoration: none;
+      transition: background-color 0.3s;
+      margin: 5px;
+    }
+    .link-button:hover {
+      background-color: #0056b3;
+      color: white;
+    }
+    .link-button.secondary {
+      background-color: #6c757d;
+    }
+    .link-button.secondary:hover {
+      background-color: #5a6268;
+    }
+    .links-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .error-bar {
       background-color: #dc3545;
       color: white;
@@ -160,24 +185,29 @@
       </div>
     </div>
   </div>
-  <div class="button-container">
-    <button id="start-button" disabled>Start</button>
-  </div>
 
   <div>
     <p>
-      Click on "Start" to start the match.
-      If the button is disabled, you'll need to wait.
-      If there's a green checkmark on the GUEST side, then somebody is already playing.
-      If it's you, make sure to restart your client before a new match.
+      Get the client app:
+    </p>
+    <div class="links-container">
+      <a href="./exe/sc-vs-bot.exe" class="link-button">Download executable</a>
+      <a href="https://github.com/stephanzlatarev/sc-vs-bot/tree/main/human/rust" target="_blank" class="link-button secondary">Build from source code</a>
+    </div>
+    <p>
+      Windows will warn you that the app is not trusted and will ask you to allow it explicitly.
     </p>
     <p>
-      After you click on "Start", you should see 2 green checkmarks on the HOME side.
-      You may need to wait for 10-20 seconds if the game engine is booting.
-      If it doesn't get to green checkmarks, you're out of luck. Come back tomorrow! 
+      If you hit errors or experience difficulties, complain in Discord.
     </p>
     <p>
-      Once HOME side is all green, you can start the client on your machine. Run:
+      Good luck and have fun!
+    </p>
+  </div>
+
+  <div style="display: none">
+    <p>
+      Start the client on your machine with:
     </p>
     <pre><b>
       docker run --name match -p 10001:10001 stephanzlatarev/sc-vs-bot-client
@@ -265,38 +295,15 @@
 
         updateElement("game-status", status.game.running);
         updateElement("bot-status", status.bot.running);
-        updateElement("client-status", status.client.connected);
+        updateElement("client-status", status.client.connectedClientPort && status.client.connectedServerPort);
         updateElement("opponent-status", status.client.playing);
         showProgressBar(status.progressing);
-
-        document.getElementById("start-button").disabled = status.progressing || status.client.connected;
         
         clearError();
       } catch (error) {
         showError("Failed to fetch status: " + error.message);
       }
     }
-    
-    async function startGame() {
-      document.getElementById("start-button").disabled = true;
-      showProgressBar(true);
-
-      try {
-        const response = await fetch("/start", { method: "POST" });
-        const result = await response.json();
-
-        if (result.error) {
-          showError("Failed to start game");
-        } else {
-          clearError();
-          updateStatus();
-        }
-      } catch (error) {
-        showError("Failed to start game: " + error.message);
-      }
-    }
-    
-    document.getElementById("start-button").addEventListener("click", startGame);
     
     // Update status immediately and then every 3 seconds
     updateStatus();

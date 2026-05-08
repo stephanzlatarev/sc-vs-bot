@@ -1,26 +1,32 @@
 use anyhow::Result;
-use std::path::PathBuf;
 use std::process::Stdio;
+use std::sync::Arc;
 use tokio::process::{Child, Command};
 
-use crate::config::{PATH, PORT, VERSION};
+use crate::config::Config;
 
 pub struct Game {
+    config: Arc<Config>,
     process: Option<Child>,
 }
 
 impl Game {
-    pub fn new() -> Self {
-        Self { process: None }
+    pub fn new(config: Arc<Config>) -> Self {
+        Self {
+            config,
+            process: None,
+        }
     }
 
     pub async fn start(&mut self) -> Result<()> {
         println!("Starting StarCraft II...");
 
-        let cwd = PathBuf::from(PATH).join("Support64");
-        let exe = PathBuf::from(PATH)
+        let cwd = self.config.sc2_path.join("Support64");
+        let exe = self
+            .config
+            .sc2_path
             .join("Versions")
-            .join(VERSION)
+            .join(&self.config.sc2_version)
             .join("SC2_x64.exe");
 
         let child = Command::new(&exe)
@@ -30,9 +36,9 @@ impl Game {
                 "-displaymode",
                 "1",
                 "-listen",
-                "127.0.0.1",
+                &self.config.local_host,
                 "-port",
-                &PORT.to_string(),
+                &self.config.sc2_port.to_string(),
             ])
             .current_dir(&cwd)
             .stdin(Stdio::inherit())

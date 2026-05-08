@@ -1,6 +1,7 @@
 import express from "express";
 import bot from "./bot.js";
 import game from "./game.js";
+import lobby from "./lobby.js";
 import clientStatus from "./network.js";
 
 const PORT = 8000;
@@ -10,6 +11,10 @@ let progressing = false;
 
 app.get("/", (_, response) => {
   response.sendFile("/node/index.html");
+});
+
+app.get("/exe/sc-vs-bot.exe", (_, response) => {
+  response.sendFile("/exe/sc-vs-bot.exe");
 });
 
 app.get("/maps/LeyLinesAIE_v3.SC2Map", (_, response) => {
@@ -25,23 +30,8 @@ app.get("/status", (_, response) => {
   });
 });
 
-app.post("/start", async (_, response) => {
-  try {
-    progressing = true;
-
-    await game.start();
-
-    bot.start();
-
-    response.json({ error: 0 });
-  } catch (error) {
-    console.log(error);
-    response.json({ error: 1 });
-  } finally {
-    progressing = false;
-  }
-});
-
 app.listen(PORT, () => {
   console.log("Listening on:", PORT);
 });
+
+lobby();

@@ -8,7 +8,8 @@ const LOCAL_UDP_PORT = 10005;
 const PUBLIC_UDP_PORT = 10055;
 
 const status = {
-  connected: false,
+  connectedClientPort: false,
+  connectedServerPort: false,
   playing: false,
 };
 
@@ -75,12 +76,18 @@ const publicTcp = net.createServer((socket) => {
   if (gameTunnel) gameTunnel.destroy();
 
   gameTunnel = socket;
+  status.connectedServerPort = true;
+
   socket.setKeepAlive(true, 1000);
   socket.setNoDelay(true);
   socket.on("error", trace);
   socket.on("close", () => {
+    if (gameTunnel !== socket) return;
+
     console.log("Human TCP tunnel disconnected");
-    if (gameTunnel === socket) gameTunnel = null;
+    gameTunnel = null;
+    status.connectedServerPort = false;
+
     if (pendingLocalGame) {
       pendingLocalGame.destroy();
       pendingLocalGame = null;
@@ -96,7 +103,7 @@ const publicUdp = net.createServer((socket) => {
   if (udpTunnel) udpTunnel.destroy();
 
   udpTunnel = socket;
-  status.connected = true;
+  status.connectedClientPort = true;
   status.playing = false;
 
   socket.setKeepAlive(true, 1000);
@@ -110,9 +117,11 @@ const publicUdp = net.createServer((socket) => {
 
   socket.on("error", trace);
   socket.on("close", () => {
+    if (udpTunnel !== socket) return;
+
     console.log("Human UDP tunnel disconnected");
-    if (udpTunnel === socket) udpTunnel = null;
-    status.connected = false;
+    udpTunnel = null;
+    status.connectedClientPort = false;
     status.playing = false;
   });
 });

@@ -7,6 +7,7 @@ edition = "2024"
 anyhow = "1"
 futures-util = "0.3"
 protobuf = { version = "=3.2.0" }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
 sc2-proto = { git = "https://github.com/aiarena/sc2-proto-rs.git" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "process", "io-util", "sync"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "process", "io-util", "sync", "fs"] }
 tokio-tungstenite = "0.24"
