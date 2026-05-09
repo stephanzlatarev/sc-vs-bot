@@ -17,19 +17,27 @@ pub async fn prepare(config: &mut Config) -> Result<()> {
 }
 
 fn ensure_sc2_version_or_exit(config: &Config) {
-    let exe = config
-        .sc2_path
-        .join("Versions")
-        .join(&config.sc2_version)
-        .join("SC2_x64.exe");
-
-    if !exe.exists() {
+    if ! get_sc2_version_path(config).exists() {
         println!(
             "StarCraft II version {} not found. Watch any replay from AI Arena to get it.",
             config.sc2_version
         );
         std::process::exit(1);
     }
+}
+
+pub fn get_sc2_version_path(config: &Config) -> PathBuf{
+    config
+        .sc2_path
+        .join("Versions")
+        .join(&config.sc2_version)
+        .join(if cfg!(target_os = "windows"){
+            "SC2_x64.exe"
+        } else if cfg!(target_os = "linux") {
+            "SC2_x64"
+        } else {
+            unreachable!("Unsupported OS")
+        })
 }
 
 fn select_race(config: &mut Config) -> Result<()> {

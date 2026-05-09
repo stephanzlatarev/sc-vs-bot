@@ -3,7 +3,7 @@ use std::process::Stdio;
 use std::sync::Arc;
 use tokio::process::{Child, Command};
 
-use crate::config::Config;
+use crate::{config::Config, lobby::get_sc2_version_path};
 
 pub struct Game {
     config: Arc<Config>,
@@ -22,32 +22,48 @@ impl Game {
         println!("Starting StarCraft II...");
 
         let cwd = self.config.sc2_path.join("Support64");
-        let exe = self
-            .config
-            .sc2_path
-            .join("Versions")
-            .join(&self.config.sc2_version)
-            .join("SC2_x64.exe");
-
-        let child = Command::new(&exe)
-            .args([
-                "-dataVersion",
-                "B89B5D6FA7CBF6452E721311BFBC6CB2",
-                "-displaymode",
-                "1",
-                "-listen",
-                &self.config.local_host,
-                "-port",
-                &self.config.sc2_port.to_string(),
-            ])
-            .current_dir(&cwd)
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn()?;
-
+        let exe = get_sc2_version_path(&self.config);
+        // Note this doesn't change from linux to windows
+        // But later config may prove that wine is required
+        let child =  if cfg!(target_os = "windows"){
+            Command::new(&exe)
+                .args([
+                    "-dataVersion",
+                    "B89B5D6FA7CBF6452E721311BFBC6CB2",
+                    "-displaymode",
+                    "1",
+                    "-listen",
+                    &self.config.local_host,
+                    "-port",
+                    &self.config.sc2_port.to_string(),
+                ])
+                .current_dir(&cwd)
+                .stdin(Stdio::inherit())
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .spawn()?
+        } else if cfg!(target_os = "linux"){
+             Command::new(&exe)
+                .args([
+                    "-dataVersion",
+                    "B89B5D6FA7CBF6452E721311BFBC6CB2",
+                    "-displaymode",
+                    "1",
+                    "-listen",
+                    &self.config.local_host,
+                    "-port",
+                    &self.config.sc2_port.to_string(),
+                ])
+                .current_dir(&cwd)
+                .stdin(Stdio::inherit())
+                .stdout(Stdio::inherit())
+                .stderr(Stdio::inherit())
+                .spawn()?
+        } else {
+            unreachable!("Unsupported OS")
+        };
         self.process = Some(child);
-        Ok(())
+            Ok(())
     }
 
     pub async fn stop(&mut self) {
