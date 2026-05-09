@@ -4,7 +4,7 @@ mod game;
 mod lobby;
 mod network;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::sync::Arc;
 
 use client::Client;
@@ -30,12 +30,28 @@ async fn play() -> Result<()> {
 
         client.create_game().await?;
 
-        network::start(Arc::clone(&config));
+        let (mut tcp_handle, mut udp_handle) = network::start(Arc::clone(&config));
 
         client.join_game(config.player_race, &config.player_name).await?;
 
         loop {
-            client.step().await?;
+            tokio::select! {
+                step_result = client.step() => {
+                    step_result?;
+                }
+                tcp_result = &mut tcp_handle => {
+                    match tcp_result {
+                        Ok(Err(e)) => return Err(e.context("TCP tunnel disconnected")),
+                        _ => return Err(anyhow!("TCP tunnel disconnected")),
+                    }
+                }
+                udp_result = &mut udp_handle => {
+                    match udp_result {
+                        Ok(Err(e)) => return Err(e.context("UDP bridge disconnected")),
+                        _ => return Err(anyhow!("UDP bridge disconnected")),
+                    }
+                }
+            }
         }
     }
     .await;

@@ -7,23 +7,23 @@ use tokio::net::{TcpStream, UdpSocket};
 use tokio::sync::Mutex;
 use tokio::time::{sleep, Duration};
 
+use tokio::task::JoinHandle;
+
 use crate::config::Config;
 
-pub fn start(config: Arc<Config>) {
+pub fn start(config: Arc<Config>) -> (JoinHandle<Result<()>>, JoinHandle<Result<()>>) {
     println!("Networking created");
 
     let tcp_config = Arc::clone(&config);
-    tokio::spawn(async {
-        if let Err(err) = run_tcp_tunnel(tcp_config).await {
-            eprintln!("ERROR: {err:?}");
-        }
+    let tcp_handle = tokio::spawn(async {
+        run_tcp_tunnel(tcp_config).await
     });
 
-    tokio::spawn(async {
-        if let Err(err) = run_udp_bridge(config).await {
-            eprintln!("ERROR: {err:?}");
-        }
+    let udp_handle = tokio::spawn(async {
+        run_udp_bridge(config).await
     });
+
+    (tcp_handle, udp_handle)
 }
 
 async fn run_tcp_tunnel(config: Arc<Config>) -> Result<()> {

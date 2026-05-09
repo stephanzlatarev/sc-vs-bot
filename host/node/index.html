@@ -77,7 +77,7 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-    button:hover:not(:disabled) {
+    button:hover:not(:disabled):not(.tab) {
       background-color: #0056b3;
     }
     button:disabled {
@@ -148,6 +148,31 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: normal;
+      cursor: pointer;
+      background: none;
+      border: none;
+      border-bottom: 2px solid #333;
+      color: #555;
+      transition: border 0.3s, font-weight 0.3s;
+    }
+    .tab.active {
+      font-weight: bold;
+      border: 2px solid #333;
+      color: #333;
+    }
+    .tab:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
   </style>
 </head>
 <body>
@@ -186,7 +211,12 @@
     </div>
   </div>
 
-  <div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('you-vs-bot')">You vs Bot</button>
+    <button class="tab" onclick="switchTab('bot-vs-bot')">Bot vs Bot</button>
+  </div>
+
+  <div id="you-vs-bot">
     <p>
       Get the client app:
     </p>
@@ -205,7 +235,7 @@
     </p>
   </div>
 
-  <div style="display: none">
+  <div id="bot-vs-bot" style="display: none">
     <p>
       Start the client on your machine with:
     </p>
@@ -255,6 +285,13 @@
   </div>
 
 <script>
+    function switchTab(tabId) {
+      document.getElementById('you-vs-bot').style.display = tabId === 'you-vs-bot' ? '' : 'none';
+      document.getElementById('bot-vs-bot').style.display = tabId === 'bot-vs-bot' ? '' : 'none';
+      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+    }
+
     function showError(message) {
       const errorBar = document.getElementById("error-bar");
       errorBar.textContent = message;
