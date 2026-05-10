@@ -8,11 +8,12 @@ use crate::config::Config;
 const MAP_URL_BASE: &str = "https://match.superskill.me/maps";
 
 pub async fn prepare(config: &mut Config) -> Result<()> {
+    select_race(config)?;
+
     let path = resolve_sc2_path(&config.sc2_path)?;
     config.sc2_path = path;
     ensure_sc2_version_or_exit(config);
     ensure_map(&config.sc2_path, &config.map_name).await?;
-    select_race(config)?;
     Ok(())
 }
 
@@ -28,8 +29,16 @@ fn ensure_sc2_version_or_exit(config: &Config) {
             "StarCraft II version {} not found. Watch any replay from AI Arena to get it.",
             config.sc2_version
         );
+        pause_before_exit();
         std::process::exit(1);
     }
+}
+
+pub fn pause_before_exit() {
+    print!("\nPress Enter to exit...");
+    let _ = io::stdout().flush();
+    let mut buf = String::new();
+    let _ = io::stdin().read_line(&mut buf);
 }
 
 fn select_race(config: &mut Config) -> Result<()> {

@@ -63,5 +63,9 @@ async fn play() -> Result<()> {
     let _ = client.disconnect().await;
     game.stop().await;
 
+    if result.is_err() {
+        lobby::pause_before_exit();
+    }
+
     result
 }
