@@ -54,8 +54,9 @@ impl eframe::App for SC2VsHumanApp {
             if self.is_playing{
                 ui.add(egui::Button::new("Starting..."));
                 ui.spinner();
+                let sc2path = self.app_conf.sc2path.clone();
                 self.bind.read_or_request(|| async {
-                    play().await
+                    play(sc2path).await
                 });
             } else {
                 if ui.button("Start Playing").clicked(){
@@ -126,8 +127,9 @@ fn save_local_save_data(data: &AppConfig){
     eprintln!("Failed to create config file: skipping");
 }
 
-async fn play() -> Result<()> {
+async fn play(sc2_path: String) -> Result<()> {
     let mut config = crate::config::Config::new();
+    config.sc2_path = sc2_path.into();
     crate::lobby::prepare(&mut config).await?;
 
     let config = Arc::new(config);
