@@ -12,7 +12,10 @@ pub async fn prepare(config: &mut Config) -> Result<()> {
     config.sc2_path = path;
     ensure_sc2_version_or_exit(config);
     ensure_map(&config.sc2_path, &config.map_name).await?;
-    select_race(config)?;
+    if config.player_race == Race::NoRace{
+        select_race(config)?;
+    }
+    
     Ok(())
 }
 

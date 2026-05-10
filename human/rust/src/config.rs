@@ -24,7 +24,7 @@ impl Config {
 			sc2_version: "Base96883".to_string(),
 			map_name: "LeyLinesAIE_v3".to_string(),
 			player_name: "Human".to_string(),
-			player_race: Race::Random,
+			player_race: Race::NoRace,
 			local_host: "127.0.0.1".to_string(),
 			local_server_port: 10004,
 			local_client_port: 10005,
