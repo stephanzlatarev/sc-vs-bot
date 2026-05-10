@@ -5,6 +5,8 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1"
+eframe = "0.34.2"
+egui-async = "0.4.1"
 futures-util = "0.3"
 protobuf = { version = "=3.2.0" }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
