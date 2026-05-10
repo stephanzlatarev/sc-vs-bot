@@ -7,6 +7,8 @@ use egui_async::Bind;
 use eframe::egui;
 use anyhow::{anyhow, Result};
 
+use crate::config::Config;
+
 pub async fn run_gui() -> Result<()> {
 
     let options = eframe::NativeOptions {
@@ -48,15 +50,35 @@ impl eframe::App for SC2VsHumanApp {
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.label("Click play to start the game");
             let sc2path = ui.add(egui::TextEdit::singleline(&mut self.app_conf.sc2path));
-            if sc2path.changed(){
+
+            let mut race = self.app_conf.race.clone();
+            egui::ComboBox::from_label("Race")
+                .selected_text(format!("{:?}", race))
+                .show_ui(ui, |ui|{
+                    ui.selectable_value(&mut race, Race::Terran, "Terran");
+                    ui.selectable_value(&mut race, Race::Zerg, "Zerg");
+                    ui.selectable_value(&mut race, Race::Protoss, "Protoss");
+                    ui.selectable_value(&mut race, Race::Random, "Random");
+                })
+            ;
+
+            if sc2path.changed() || race != self.app_conf.race{
                 save_local_save_data(&self.app_conf);
             }
+            let mut config: Config = Config::new();
+            config.sc2_path = self.app_conf.sc2path.clone().into();
+            config.player_race = match race{
+                Race::Terran => sc2_proto::common::Race::Terran,
+                Race::Zerg => sc2_proto::common::Race::Zerg,
+                Race::Protoss => sc2_proto::common::Race::Protoss,
+                Race::Random => sc2_proto::common::Race::Random,
+            };
+
             if self.is_playing{
                 ui.add(egui::Button::new("Starting..."));
                 ui.spinner();
-                let sc2path = self.app_conf.sc2path.clone();
                 self.bind.read_or_request(|| async {
-                    play(sc2path).await
+                    play(config).await
                 });
             } else {
                 if ui.button("Start Playing").clicked(){
@@ -69,9 +91,20 @@ impl eframe::App for SC2VsHumanApp {
 
 }
 
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Default, PartialEq, Clone)]
+enum Race {
+    Terran = 1,
+    Zerg = 2,
+    Protoss = 3,
+    #[default]
+    Random = 4,
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug, Default)]
 struct AppConfig{
-    sc2path: String
+    sc2path: String,
+    race: Race
 }
 
 fn get_local_saved_data_or_default() -> AppConfig{
@@ -79,7 +112,12 @@ fn get_local_saved_data_or_default() -> AppConfig{
         let config_path = proj_dir.cache_dir().join("config.json");
         match File::open(&config_path) {
             Ok(x) => {
-                return serde_json::from_reader::<File, AppConfig>(x).expect("Failed to parse config file as JSON")
+                match serde_json::from_reader::<File, AppConfig>(x){
+                    Ok(x) => return x,
+                    Err(err) => {
+                        eprintln!("Failed to parse the config file as JSON, reason: {err}, (Skipping)")
+                    }
+                }
             },
             Err(err) => {
                 eprintln!("Failed to open config file {:?}, reason: {} (Skipping)", config_path, err)
@@ -127,9 +165,7 @@ fn save_local_save_data(data: &AppConfig){
     eprintln!("Failed to create config file: skipping");
 }
 
-async fn play(sc2_path: String) -> Result<()> {
-    let mut config = crate::config::Config::new();
-    config.sc2_path = sc2_path.into();
+async fn play(mut config: crate::config::Config) -> Result<()> {
     crate::lobby::prepare(&mut config).await?;
 
     let config = Arc::new(config);
