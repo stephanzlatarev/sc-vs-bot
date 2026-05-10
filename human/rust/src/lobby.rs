@@ -17,6 +17,7 @@ pub async fn prepare(config: &mut Config) -> Result<()> {
 }
 
 fn ensure_sc2_version_or_exit(config: &Config) {
+    println!("{:?}", get_sc2_version_path(config));
     if ! get_sc2_version_path(config).exists() {
         println!(
             "StarCraft II version {} not found. Watch any replay from AI Arena to get it.",
@@ -31,13 +32,7 @@ pub fn get_sc2_version_path(config: &Config) -> PathBuf{
         .sc2_path
         .join("Versions")
         .join(&config.sc2_version)
-        .join(if cfg!(target_os = "windows"){
-            "SC2_x64.exe"
-        } else if cfg!(target_os = "linux") {
-            "SC2_x64"
-        } else {
-            unreachable!("Unsupported OS")
-        })
+        .join("SC2_x64.exe")
 }
 
 fn select_race(config: &mut Config) -> Result<()> {

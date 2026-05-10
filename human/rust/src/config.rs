@@ -21,7 +21,7 @@ impl Config {
 		Self {
 			sc2_path: PathBuf::from(r"C:\Program Files (x86)\StarCraft II"),
 			sc2_port: 10001,
-			sc2_version: "Base75689".to_string(),
+			sc2_version: "Base96883".to_string(),
 			map_name: "LeyLinesAIE_v3".to_string(),
 			player_name: "Human".to_string(),
 			player_race: Race::Random,

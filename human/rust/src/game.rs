@@ -43,9 +43,10 @@ impl Game {
                 .stderr(Stdio::inherit())
                 .spawn()?
         } else if cfg!(target_os = "linux"){
-             Command::new(&exe)
+             Command::new("wine")
                 .args([
-                    "-dataVersion",
+                    exe.as_os_str().to_str().unwrap(),
+                   "-dataVersion",
                     "B89B5D6FA7CBF6452E721311BFBC6CB2",
                     "-displaymode",
                     "1",

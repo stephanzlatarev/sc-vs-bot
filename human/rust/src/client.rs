@@ -63,17 +63,16 @@ impl Client {
 
     pub async fn create_game(&mut self) -> Result<()> {
         println!("Creating game");
-
         let mut local_map = LocalMap::new();
         local_map.set_map_path(
-            self.config
+            format!("{}.SC2Map", &self.config.map_name).to_string()
+            /* self.config
                 .sc2_path
                 .join("Maps")
                 .join(format!("{}.SC2Map", &self.config.map_name))
                 .to_string_lossy()
-                .to_string(),
+                .to_string(), */
         );
-
         let mut p1 = PlayerSetup::new();
         p1.set_type(PlayerType::Participant);
         let mut p2 = PlayerSetup::new();
