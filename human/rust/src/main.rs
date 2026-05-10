@@ -3,6 +3,7 @@ mod config;
 mod game;
 mod lobby;
 mod network;
+mod gui;
 
 use anyhow::{anyhow, Result};
 use std::sync::Arc;
@@ -13,7 +14,12 @@ use game::Game;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    play().await
+    let gui = true;
+    if gui{
+        gui::run_gui().await
+    } else {
+        play().await
+    }
 }
 
 async fn play() -> Result<()> {

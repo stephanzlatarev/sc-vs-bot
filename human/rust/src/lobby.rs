@@ -12,24 +12,30 @@ pub async fn prepare(config: &mut Config) -> Result<()> {
     config.sc2_path = path;
     ensure_sc2_version_or_exit(config);
     ensure_map(&config.sc2_path, &config.map_name).await?;
-    select_race(config)?;
+    if config.player_race == Race::NoRace{
+        select_race(config)?;
+    }
+    
     Ok(())
 }
 
 fn ensure_sc2_version_or_exit(config: &Config) {
-    let exe = config
-        .sc2_path
-        .join("Versions")
-        .join(&config.sc2_version)
-        .join("SC2_x64.exe");
-
-    if !exe.exists() {
+    println!("{:?}", get_sc2_version_path(config));
+    if ! get_sc2_version_path(config).exists() {
         println!(
             "StarCraft II version {} not found. Watch any replay from AI Arena to get it.",
             config.sc2_version
         );
         std::process::exit(1);
     }
+}
+
+pub fn get_sc2_version_path(config: &Config) -> PathBuf{
+    config
+        .sc2_path
+        .join("Versions")
+        .join(&config.sc2_version)
+        .join("SC2_x64.exe")
 }
 
 fn select_race(config: &mut Config) -> Result<()> {
