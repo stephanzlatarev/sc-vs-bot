@@ -49,7 +49,12 @@ impl eframe::App for SC2VsHumanApp {
         // We use `show_inside` because `ui` already provides a root UI context.
         egui::CentralPanel::default().show_inside(ui, |ui| {
             ui.label("Click play to start the game");
-            let sc2path = ui.add(egui::TextEdit::singleline(&mut self.app_conf.sc2path));
+            
+            ui.label("Please enter your SC2 path: for example: C:\\Program Files (x86)\\StarCraft II");
+            let sc2path = ui.add(
+                egui::TextEdit::singleline(&mut self.app_conf.sc2path)
+                .clip_text(false)
+            );
 
             let mut race = self.app_conf.race.clone();
             egui::ComboBox::from_label("Race")
@@ -63,6 +68,7 @@ impl eframe::App for SC2VsHumanApp {
             ;
 
             if sc2path.changed() || race != self.app_conf.race{
+                self.app_conf.race = race.clone();
                 save_local_save_data(&self.app_conf);
             }
             let mut config: Config = Config::new();
